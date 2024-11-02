@@ -1,32 +1,36 @@
 #!/usr/bin/env python3
-import spacy
 from faker import Faker
-
-fake = Faker()
-# use the small model for efficiency
-nlp = spacy.load('en_core_web_sm')
-# merge entities so we can replace them as a whole
-nlp.add_pipe("merge_entities")
+from presidio_analyzer import AnalyzerEngine
+from presidio_anonymizer import AnonymizerEngine
+from presidio_anonymizer.entities import OperatorConfig
 
 text = open('a.txt').read()
-
 print(text)
-doc = nlp(text)
 
-for ent in doc:
-    print(ent.orth_, ent.lemma_, ent.pos_, ent.ent_type_)
+fake = Faker()
 
+def operators():
+    return {
+        "PERSON": OperatorConfig("custom", {"lambda": lambda x : fake.name()}),
+        "DATE_TIME": OperatorConfig("custom", {"lambda": lambda x : fake.date()}),
+        "IP_ADDRESS": OperatorConfig("custom", {"lambda": lambda x : fake.ipv4()}),
+        "PHONE_NUMBER": OperatorConfig("custom", {"lambda": lambda x : fake.phone_number()}),
+        "CREDIT_CARD": OperatorConfig("custom", {"lambda": lambda x : fake.credit_card_number()}),
+        "EMAIL_ADDRESS": OperatorConfig("custom", {"lambda": lambda x : fake.email()}),
+        "LOCATION": OperatorConfig("custom", {"lambda": lambda x : fake.city()}),
+    }
 
-for ent in doc.ents:
-    print(f"{ent.label_}: {ent.text}")
+analyzer = AnalyzerEngine()
+anonymizer = AnonymizerEngine()
+analyzer_result = analyzer.analyze(
+            text=text,
+            language="en",
+)
 
-print()
+anonymizer_result = anonymizer.anonymize(
+    text=text,
+    analyzer_results=analyzer_result,
+    operators=operators()
+)
 
-print([t.text if not t.ent_type_ else t.ent_type_ for t in doc])
-print(" ".join([t.text if not t.ent_type_ else t.ent_type_ for t in doc]) )
-
-# Replace the PII with anonymized data
-anon = " ".join([fake.name() if t.ent_type_ == "PERSON" else fake.company() if t.ent_type_ == "ORG" else fake.date() if t.ent_type_ == "DATE" else t.text if not t.ent_type_ else t.ent_type_ for t in doc])
-
-# Remove extranneous spaces before punctuation.
-print(anon.replace(" .", "."))
+print(anonymizer_result)

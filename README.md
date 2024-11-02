@@ -7,8 +7,7 @@ A Python module and script to anonymize personally identifiable information (PII
 As anonipy works as a self-contained script, simply install the dependencies:
 
 ```bash
-pip install spacy faker
-python -m spacy download en_core_web_sm
+pip install presidio_anonymizer presidio_analyzer faker
 ```
 
 ## Technical Details

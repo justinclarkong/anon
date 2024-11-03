@@ -28,21 +28,27 @@ operators = {
         "LOCATION": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.city)}),
 }
 
-text = input("Please input your text to be anonymized:\n")
+def analyze(text):
+    analyzer = AnalyzerEngine()
+    anonymizer = AnonymizerEngine()
 
-print("\nYou will be prompted to choose whether to anonymize each instance of PII. To regenerate the result, simply enter it as blank.\n")
+    analyzer_result = analyzer.analyze(
+        text=text,
+        language="en",
+    )
+    
+    return anonymizer.anonymize(
+        text=text,
+        analyzer_results=analyzer_result,
+        operators=operators
+    )
 
-analyzer = AnalyzerEngine()
-anonymizer = AnonymizerEngine()
-analyzer_result = analyzer.analyze(
-            text=text,
-            language="en",
-)
 
-anonymizer_result = anonymizer.anonymize(
-    text=text,
-    analyzer_results=analyzer_result,
-    operators=operators
-)
+def main():
+    text = input("Please input your text to be anonymized:\n")
+    print("\nYou will be prompted to choose whether to anonymize each instance of PII. To regenerate the result, simply enter it as blank.\n")
+    result = analyze(text)
+    print(f"\nAnonymized result:\n{result.text}")
 
-print(f"\nAnonymized result:\n{anonymizer_result.text}")
+if __name__ == "__main__":
+    main()

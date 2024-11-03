@@ -4,21 +4,33 @@ from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
 
-text = open('a.txt').read()
-print(text)
-
 fake = Faker()
 
-def operators():
-    return {
-        "PERSON": OperatorConfig("custom", {"lambda": lambda x : fake.name()}),
-        "DATE_TIME": OperatorConfig("custom", {"lambda": lambda x : fake.date()}),
-        "IP_ADDRESS": OperatorConfig("custom", {"lambda": lambda x : fake.ipv4()}),
-        "PHONE_NUMBER": OperatorConfig("custom", {"lambda": lambda x : fake.phone_number()}),
-        "CREDIT_CARD": OperatorConfig("custom", {"lambda": lambda x : fake.credit_card_number()}),
-        "EMAIL_ADDRESS": OperatorConfig("custom", {"lambda": lambda x : fake.email()}),
-        "LOCATION": OperatorConfig("custom", {"lambda": lambda x : fake.city()}),
-    }
+def anonymize(ent, func):
+    if ent == "PII":
+        return ent
+
+    while True:
+        anon = func()
+        yn = input(f"Anonymize the entity '{ent}' to '{anon}'? [y/n] ").lower()
+        if yn == "y":
+            return anon
+        elif yn == "n":
+            return ent
+
+operators = {
+        "PERSON": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.name)}),
+        "DATE_TIME": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.date)}),
+        "IP_ADDRESS": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.ipv4)}),
+        "PHONE_NUMBER": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.phone_number)}),
+        "CREDIT_CARD": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.credit_card_number)}),
+        "EMAIL_ADDRESS": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.email)}),
+        "LOCATION": OperatorConfig("custom", {"lambda": lambda ent : anonymize(ent, fake.city)}),
+}
+
+text = input("Please input your text to be anonymized:\n")
+
+print("\nYou will be prompted to choose whether to anonymize each instance of PII. To regenerate the result, simply enter it as blank.\n")
 
 analyzer = AnalyzerEngine()
 anonymizer = AnonymizerEngine()
@@ -30,7 +42,7 @@ analyzer_result = analyzer.analyze(
 anonymizer_result = anonymizer.anonymize(
     text=text,
     analyzer_results=analyzer_result,
-    operators=operators()
+    operators=operators
 )
 
-print(anonymizer_result)
+print(f"\nAnonymized result:\n{anonymizer_result.text}")
